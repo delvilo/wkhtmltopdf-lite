@@ -104,6 +104,10 @@ void ProgressFeedback::phaseChanged() {
 */
 void ProgressFeedback::progressChanged(int progress) {
 	if (logLevel < settings::Info) return;
+	const QString progressStr = converter.progressString();
+	const QByteArray progressLocal = progressStr.toLocal8Bit();
+	const int progressSize = progressStr.size();
+
 	fprintf(stderr, "[");
 	int w=60;
 	progress *= w;
@@ -114,8 +118,8 @@ void ProgressFeedback::progressChanged(int progress) {
 		else fprintf(stderr, " ");
 	}
 	fprintf(stderr, "]");
-	fprintf(stderr, " %s", S(converter.progressString()));
-	int l=1+w+2+converter.progressString().size();
+	fprintf(stderr, " %s", progressLocal.constData());
+	int l=1+w+2+progressSize;
 	for (int i=l; i < lw; ++i) fprintf(stderr, " ");
 	lw = l;
 	fprintf(stderr, "\r");
