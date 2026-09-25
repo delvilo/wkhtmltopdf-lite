@@ -364,23 +364,28 @@ void ResourceObject::loadDone() {
 
 /*!
  * Called when the page requires authentication, fills in the username
- * and password supplied on the command line
+ * and password supplied on the command line.
  */
 void ResourceObject::handleAuthenticationRequired(QNetworkReply *reply, QAuthenticator *authenticator) {
-	Q_UNUSED(reply);
-
-	// XXX: Avoid calling 'reply->abort()' from within this signal.
-	//      As stated by doc, request would be finished when no
-	//      user/pass properties are assigned to authenticator object.
+	// As stated by Qt network documentation, calling reply->abort() directly from
+	// within the authenticationRequired signal handler is not recommended and can cause
+	// undefined behavior. To safely abort the request when credentials are missing or invalid,
+	// we clear the authenticator object and queue reply->abort() via Qt::QueuedConnection.
 	// See: http://qt-project.org/doc/qt-5.0/qtnetwork/qnetworkaccessmanager.html#authenticationRequired
 
+	*authenticator = QAuthenticator();
+
 	if (settings.username.isEmpty()) {
-		//If no username is given, complain the such is required
+		//If no username is given, complain that such is required
 		error("Authentication Required");
+		if (reply)
+			QMetaObject::invokeMethod(reply, "abort", Qt::QueuedConnection);
 	} else if (loginTry >= 2) {
 		//If the login has failed a sufficient number of times,
 		//the username or password must be wrong
 		error("Invalid username or password");
+		if (reply)
+			QMetaObject::invokeMethod(reply, "abort", Qt::QueuedConnection);
 	} else {
 		authenticator->setUser(settings.username);
 		authenticator->setPassword(settings.password);

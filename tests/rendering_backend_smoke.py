@@ -124,6 +124,19 @@ class RenderingBackendSmoke(unittest.TestCase):
                 self.assertEqual(request[0], 'POST')
                 self.assertEqual(parse_qs(request[3].decode()), {'name': ['two words']})
 
+    def test_authentication_failures(self):
+        for program in ['wkhtmltopdf', 'wkhtmltoimage']:
+            with self.subTest(program=program, case='missing_credentials'):
+                result = self.convert(program, '--load-error-handling', 'abort', source=self.base + '/auth')
+                self.assertEqual(result.returncode, 1, result.stderr.decode(errors='replace'))
+                self.assertIn(b'Authentication Required', result.stderr)
+
+            with self.subTest(program=program, case='invalid_credentials'):
+                result = self.convert(program, '--username', 'invalid', '--password', 'wrong',
+                                      '--load-error-handling', 'abort', source=self.base + '/auth')
+                self.assertEqual(result.returncode, 1, result.stderr.decode(errors='replace'))
+                self.assertIn(b'Invalid username or password', result.stderr)
+
     def test_javascript_status_and_disabled_scripts(self):
         program = 'wkhtmltoimage'
         red = b'<html><body style="margin:0;background:red"></body></html>'
