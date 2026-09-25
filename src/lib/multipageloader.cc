@@ -482,11 +482,12 @@ void ResourceObject::load() {
 	if (hasFiles) {
 		boundary = QUuid::createUuid().toString().remove('-').remove('{').remove('}');
 		foreach (const settings::PostItem & pi, settings.post) {
-			//TODO escape values here
+			QString name = pi.name;
+			name.replace('\\', "\\\\").replace('"', "\\\"");
 			postData.append("--");
 			postData.append(boundary);
 			postData.append("\ncontent-disposition: form-data; name=\"");
-			postData.append(pi.name);
+			postData.append(name);
 			postData.append('\"');
 			if (pi.file) {
 				QFile f(pi.value);
@@ -494,8 +495,10 @@ void ResourceObject::load() {
 					error(QString("Unable to open file ")+pi.value);
 					multiPageLoader.fail();
 				}
+				QString filename = QFileInfo(pi.value).fileName();
+				filename.replace('\\', "\\\\").replace('"', "\\\"");
 				postData.append("; filename=\"");
-				postData.append( QFileInfo(pi.value).fileName());
+				postData.append(filename);
 				postData.append("\"\n\n");
 				postData.append( f.readAll() );
 				//TODO ADD MIME TYPE
