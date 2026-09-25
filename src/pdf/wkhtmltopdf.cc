@@ -36,9 +36,6 @@ int main(int argc, char * argv[]) {
 	//Create a command line parser to parse commandline arguments
 	PdfCommandLineParser parser(globalSettings, objectSettings);
 
-	//Setup default values in settings
-	//parser.loadDefaults();
-
 	//Parse the arguments
 	parser.parseArguments(argc, argv);
 

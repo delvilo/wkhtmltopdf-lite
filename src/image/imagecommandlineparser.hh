@@ -45,7 +45,6 @@ public:
 	virtual void manpage(FILE * fd) const;
 	virtual QString appName() const {return "wkhtmltoimage";}
 
-	//void loadDefaults();
 	void parseArguments(int argc, const char * const * argv);
 
 };

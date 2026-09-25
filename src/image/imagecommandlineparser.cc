@@ -59,28 +59,6 @@ void ImageCommandLineParser::usage(FILE * fd, bool extended) const {
 }
 
 /*!
- * Load default arguments and put them in the settings structure
- */
-// void ImageCommandLineParser::loadDefaults() {
-// 	d->settings.in = "-";
-// 	d->settings.proxy.host = "";
-// 	foreach (ArgHandler * h, d->longToHandler)
-// 		h->useDefault(*d);
-
-// 	//Load configuration from environment
-// 	char * val;
-// 	const char * vars[] = {"proxy","all_proxy","http_proxy", NULL};
-// 	for (int i=0; vars[i]; ++i) {
-// 		if ((val = getenv("proxy"))) {
-// 			bool ok=false;
-// 			Settings::ProxySettings p = Settings::strToProxy(val, &ok);
-// 			if (ok)
-// 				d->settings.proxy = p;
-// 		}
-// 	}
-// }
-
-/*!
  * Parse command line arguments, and set settings accordingly.
  * \param argc the number of command line arguments
  * \param argv a NULL terminated list with the arguments
