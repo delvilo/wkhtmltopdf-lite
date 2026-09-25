@@ -25,15 +25,6 @@
 namespace wkhtmltopdf {
 
 bool ResourceLoader::copyFile(QFile & src, QFile & dst) {
-//      TODO enable again when
-//      http://bugreports.qt.nokia.com/browse/QTBUG-6894
-//      is fixed
-//      QByteArray buf(1024*1024*5,0);
-//      while ( qint64 r=src.read(buf.data(),buf.size())) {
-//          if (r == -1) return false;
-//          if (dst.write(buf.data(),r) != r) return false;
-//      }
-
     if (dst.write( src.readAll() ) == -1) return false;
 
 	src.close();
