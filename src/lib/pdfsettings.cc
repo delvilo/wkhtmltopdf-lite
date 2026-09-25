@@ -145,6 +145,8 @@ DLL_LOCAL QMap<QString, QPrinter::PageSize> pageSizeMap() {
 	return res;
 }
 
+static const QMap<QString, QPrinter::PageSize> pageSizes = pageSizeMap();
+
 /*!
   Convert a string to a paper size, basically all thinkable values are allowed.
   if a unknown value is given A4 is returned
@@ -152,8 +154,7 @@ DLL_LOCAL QMap<QString, QPrinter::PageSize> pageSizeMap() {
   \param ok If supplied indicates if the conversion was successful
 */
 QPrinter::PageSize strToPageSize(const char * s, bool * ok) {
-	QMap<QString,QPrinter::PageSize> map = pageSizeMap();
-	for (QMap<QString,QPrinter::PageSize>::const_iterator i=map.begin(); i != map.end(); ++i) {
+	for (QMap<QString,QPrinter::PageSize>::const_iterator i=pageSizes.begin(); i != pageSizes.end(); ++i) {
 		if (i.key().compare(s, Qt::CaseInsensitive) != 0) continue;
 		if (ok) *ok=true;
 		return i.value();
@@ -163,8 +164,7 @@ QPrinter::PageSize strToPageSize(const char * s, bool * ok) {
 }
 
 QString pageSizeToStr(QPrinter::PageSize ps) {
-	QMap<QString,QPrinter::PageSize> map = pageSizeMap();
-	for (QMap<QString,QPrinter::PageSize>::const_iterator i=map.begin(); i != map.end(); ++i) {
+	for (QMap<QString,QPrinter::PageSize>::const_iterator i=pageSizes.begin(); i != pageSizes.end(); ++i) {
 		if (i.value() == ps) return i.key();
 	}
 	return "";
