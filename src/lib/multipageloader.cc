@@ -263,10 +263,7 @@ ResourceObject::ResourceObject(MultiPageLoaderPrivate & mpl, const QUrl & u, con
  */
 void ResourceObject::loadStarted() {
 	debug("QWebPage load started.");
-	if (finished == true) {
-		++multiPageLoader.loading;
-		finished = false;
-	}
+	if (finished) return;
 	if (multiPageLoader.loadStartedEmitted) return;
 	multiPageLoader.loadStartedEmitted=true;
 	emit multiPageLoader.outer.loadStarted();
@@ -354,11 +351,12 @@ void ResourceObject::loadDone() {
 
 	debug("Loading done; Stopping QWebPage and any possible page refreshes.");
 
+	webPage.disconnect(this);
+
 	// Ensure no more loading goes..
 	webPage.triggerAction(QWebPage::Stop);
 	webPage.triggerAction(QWebPage::StopScheduledPageRefresh);
 	networkAccessManager.dispose();
-	//disconnect(this, 0, 0, 0);
 
 	--multiPageLoader.loading;
 	if (multiPageLoader.loading == 0)
