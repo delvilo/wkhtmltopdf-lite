@@ -212,8 +212,8 @@ UnitReal strToUnitReal(const char * o, bool * ok) {
 	} else if (!strcasecmp(o+i,"m") || !strcasecmp(o+i,"meter")) {
 		u=QPrinter::Millimeter;
 		s=1000.0; //1m=1000m
-	} else if (!strcasecmp(o+i,"didot"))
-		u=QPrinter::Didot; //Todo is there a short for didot??
+	} else if (!strcasecmp(o+i,"didot") || !strcasecmp(o+i,"dd"))
+		u=QPrinter::Didot;
 	else if (!strcasecmp(o+i,"inch") || !strcasecmp(o+i,"in"))
 		u=QPrinter::Inch;
 	else if (!strcasecmp(o+i,"pica") || !strcasecmp(o+i,"pc"))
