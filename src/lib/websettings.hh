@@ -50,6 +50,9 @@ struct DLL_PUBLIC Web {
 	//! Stylesheet supplied by the user
 	QString userStyleSheet;
 
+	//! What zoom factor should we apply when printing
+	float zoomFactor;
+
 };
 
 }

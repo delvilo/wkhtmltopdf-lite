@@ -166,6 +166,8 @@ void CommandLineParserBase::addWebArgs(Web & s) {
 	addarg("disable-javascript",'n',"Do not allow web pages to run javascript", new ConstSetter<bool>(s.enableJavascript,false));
 	addarg("enable-javascript",0,"Do allow web pages to run javascript", new ConstSetter<bool>(s.enableJavascript,true));
 
+	addarg("zoom",0,"Use this zoom factor", new FloatSetter(s.zoomFactor,"float",1.0));
+
 	extended(true);
  	addarg("encoding", 0, "Set the default text encoding, for input", new QStrSetter(s.defaultEncoding,"encoding"));
 
@@ -191,7 +193,6 @@ void CommandLineParserBase::addPageLoadArgs(LoadPage & s) {
 	addarg("javascript-delay",0,"Wait some milliseconds for javascript finish", new IntSetter(s.jsdelay,"msec"));
 	addarg("window-status",0,"Wait until window.status is equal to this string before rendering page", new QStrSetter(s.windowStatus, "windowStatus"));
 
-	addarg("zoom",0,"Use this zoom factor", new FloatSetter(s.zoomFactor,"float",1.0));
 	addarg("cookie",0,"Set an additional cookie (repeatable), value should be url encoded.", new MapSetter<>(s.cookies, "name", "value"));
 	addarg("post", 0, "Add an additional post field (repeatable)", new MapSetter<PostItemCreator<false> >(s.post, "name", "value"));
 	addarg("post-file", 0, "Post an additional file (repeatable)", new MapSetter<PostItemCreator<true> >(s.post, "name", "path"));

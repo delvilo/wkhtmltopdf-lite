@@ -62,7 +62,6 @@ ReflectImpl<LoadPage>::ReflectImpl(LoadPage & c) {
 	WKHTMLTOPDF_REFLECT(clientSslCrtPath);
 	WKHTMLTOPDF_REFLECT(jsdelay);
 	WKHTMLTOPDF_REFLECT(windowStatus);
-	WKHTMLTOPDF_REFLECT(zoomFactor);
 	WKHTMLTOPDF_REFLECT(customHeaders);
 	WKHTMLTOPDF_REFLECT(repeatCustomHeaders);
 	WKHTMLTOPDF_REFLECT(cookies);
@@ -86,6 +85,7 @@ ReflectImpl<Web>::ReflectImpl(Web & c) {
 	WKHTMLTOPDF_REFLECT(minimumFontSize);
 	WKHTMLTOPDF_REFLECT(defaultEncoding);
 	WKHTMLTOPDF_REFLECT(userStyleSheet);
+	WKHTMLTOPDF_REFLECT(zoomFactor);
 }
 
 }

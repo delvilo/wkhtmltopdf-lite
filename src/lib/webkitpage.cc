@@ -158,6 +158,7 @@ void WebKitPage::applySettings(const settings::Web & s) {
 	ws->setAttribute(QWebSettings::PluginsEnabled, false);
 	if (!s.userStyleSheet.isEmpty())
 		ws->setUserStyleSheetUrl(ResourceLoader::guessUrlFromString(s.userStyleSheet));
+	d->page.mainFrame()->setZoomFactor(s.zoomFactor);
 }
 
 }

@@ -49,6 +49,7 @@
  * - \b web.defaultEncoding What encoding should we guess content is using if they do not
  *      specify it properly? E.g. "utf-8"
  * - \b web.userStyleSheet Url er path to a user specified style sheet.
+ * - \b web.zoomFactor How much should we zoom in on the content? E.g. "2.2".
  *
  * \section pageLoad Object Specific loading settings
  * The following settings apply for object loading.
@@ -57,7 +58,6 @@
  * - \b load.jsdelay The mount of time in milliseconds to wait after a page has done loading until
  *      it is actually printed. E.g. "1200". We will wait this amount of time or until, javascript
  *      calls window.print().
- * - \b load.zoomFactor How much should we zoom in on the content? E.g. "2.2".
  * - \b load.customHeaders TODO
  * - \b load.repertCustomHeaders Should the custom headers be sent all elements loaded instead of
  *       only the main page? Must be either "true" or "false".

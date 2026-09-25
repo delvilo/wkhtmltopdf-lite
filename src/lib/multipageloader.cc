@@ -255,7 +255,6 @@ ResourceObject::ResourceObject(MultiPageLoaderPrivate & mpl, const QUrl & u, con
 	}
 
 	webPage.setNetworkAccessManager(&networkAccessManager);
-	webPage.mainFrame()->setZoomFactor(settings.zoomFactor);
 }
 
 /*!

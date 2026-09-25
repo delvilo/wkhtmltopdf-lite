@@ -29,7 +29,8 @@ Web::Web() :
 	enableJavascript(true),
 	minimumFontSize(-1),
 	defaultEncoding(""),
-	userStyleSheet("") {}
+	userStyleSheet(""),
+	zoomFactor(1.0) {}
 
 }
 }
