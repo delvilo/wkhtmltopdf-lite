@@ -615,17 +615,11 @@ void MultiPageLoaderPrivate::load() {
 }
 
 void MultiPageLoaderPrivate::clearResources() {
-	while (resources.size() > 0)
-	{
-		// XXX: Using deleteLater() to dispose
-		// resources, to avoid race conditions with
-		// pending signals reaching a deleted resource.
-		// Also, and we must avoid calling clear()
-		// on resources list, is it tries to delete
-		// each objet on removal.
-		ResourceObject *tmp = resources.takeFirst();
-		tmp->deleteLater();
-	}
+	// Dispose resources using deleteLater() to avoid race conditions
+	// with pending signals reaching a deleted resource.
+	foreach (ResourceObject *r, resources)
+		r->deleteLater();
+	resources.clear();
 	tempIn.removeAll();
 }
 
