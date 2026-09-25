@@ -314,12 +314,14 @@ void ResourceObject::loadFinished(bool ok) {
 			warning(QString("Failed loading page ") + url.toString() + " (ignored)");
 	}
 
-	// Evaluate user scripts for the conversion input.
-	foreach (const QString & str, settings.runScript)
-		webPage.mainFrame()->evaluateJavaScript(str);
+	if (ok) {
+		// Evaluate user scripts for the conversion input.
+		foreach (const QString & str, settings.runScript)
+			webPage.mainFrame()->evaluateJavaScript(str);
+	}
 
-	// XXX: If loading failed there's no need to wait
-	//      for javascript on this resource.
+	// If loading failed there's no need to wait
+	// for javascript on this resource.
 	if (!ok || signalPrint || settings.jsdelay == 0) loadDone();
 	else if (!settings.windowStatus.isEmpty()) waitWindowStatus();
 	else QTimer::singleShot(settings.jsdelay, this, SLOT(loadDone()));
