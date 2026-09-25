@@ -327,6 +327,7 @@ CAPI(int) wkhtmltopdf_set_global_setting(wkhtmltopdf_global_settings * settings,
 CAPI(int) wkhtmltopdf_get_global_setting(wkhtmltopdf_global_settings * settings, const char * name, char * value, int vs) {
 	QString res = reinterpret_cast<settings::PdfGlobal *>(settings)->get(name);
 	if (res.isNull()) return 0;
+	if (!value || vs <= 0) return 0;
 	qstrncpy(value, res.toUtf8().constData(), vs);
 	return 1;
 }
@@ -384,6 +385,7 @@ CAPI(int) wkhtmltopdf_set_object_setting(wkhtmltopdf_object_settings * settings,
 CAPI(int) wkhtmltopdf_get_object_setting(wkhtmltopdf_object_settings * settings, const char * name, char * value, int vs) {
 	QString res = reinterpret_cast<settings::PdfObject *>(settings)->get(name);
 	if (res.isNull()) return 0;
+	if (!value || vs <= 0) return 0;
 	qstrncpy(value, res.toUtf8().constData(), vs);
 	return 1;
 }

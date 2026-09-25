@@ -285,6 +285,90 @@ class ImageEntrySmoke(unittest.TestCase):
         finally:
             deinitialize()
 
+    def test_c_api_get_setting_bounds_check(self):
+        path = BIN_DIR / 'libwkhtmltox.so'
+        self.assertTrue(path.exists())
+        lib = ctypes.CDLL(str(path))
+        ptr, text = ctypes.c_void_p, ctypes.c_char_p
+
+        img_create_gs = getattr(lib, 'wkhtmltoimage_create_global_settings')
+        img_create_gs.argtypes, img_create_gs.restype = [], ptr
+        img_destroy_gs = getattr(lib, 'wkhtmltoimage_destroy_global_settings')
+        img_destroy_gs.argtypes, img_destroy_gs.restype = [ptr], None
+        img_set_gs = getattr(lib, 'wkhtmltoimage_set_global_setting')
+        img_set_gs.argtypes, img_set_gs.restype = [ptr, text, text], ctypes.c_int
+        img_get_gs = getattr(lib, 'wkhtmltoimage_get_global_setting')
+        img_get_gs.argtypes, img_get_gs.restype = [ptr, text, text, ctypes.c_int], ctypes.c_int
+
+        pdf_create_gs = getattr(lib, 'wkhtmltopdf_create_global_settings')
+        pdf_create_gs.argtypes, pdf_create_gs.restype = [], ptr
+        pdf_destroy_gs = getattr(lib, 'wkhtmltopdf_destroy_global_settings')
+        pdf_destroy_gs.argtypes, pdf_destroy_gs.restype = [ptr], None
+        pdf_set_gs = getattr(lib, 'wkhtmltopdf_set_global_setting')
+        pdf_set_gs.argtypes, pdf_set_gs.restype = [ptr, text, text], ctypes.c_int
+        pdf_get_gs = getattr(lib, 'wkhtmltopdf_get_global_setting')
+        pdf_get_gs.argtypes, pdf_get_gs.restype = [ptr, text, text, ctypes.c_int], ctypes.c_int
+
+        pdf_create_os = getattr(lib, 'wkhtmltopdf_create_object_settings')
+        pdf_create_os.argtypes, pdf_create_os.restype = [], ptr
+        pdf_destroy_os = getattr(lib, 'wkhtmltopdf_destroy_object_settings')
+        pdf_destroy_os.argtypes, pdf_destroy_os.restype = [ptr], None
+        pdf_set_os = getattr(lib, 'wkhtmltopdf_set_object_setting')
+        pdf_set_os.argtypes, pdf_set_os.restype = [ptr, text, text], ctypes.c_int
+        pdf_get_os = getattr(lib, 'wkhtmltopdf_get_object_setting')
+        pdf_get_os.argtypes, pdf_get_os.restype = [ptr, text, text, ctypes.c_int], ctypes.c_int
+
+        # Image global settings
+        gs = img_create_gs()
+        try:
+            self.assertEqual(img_set_gs(gs, b'fmt', b'png'), 1)
+            buf = ctypes.create_string_buffer(64)
+            # Valid call
+            self.assertEqual(img_get_gs(gs, b'fmt', buf, 64), 1)
+            self.assertEqual(buf.value, b'png')
+            # Null value buffer pointer
+            self.assertEqual(img_get_gs(gs, b'fmt', None, 64), 0)
+            # Zero buffer size
+            self.assertEqual(img_get_gs(gs, b'fmt', buf, 0), 0)
+            # Negative buffer size
+            self.assertEqual(img_get_gs(gs, b'fmt', buf, -1), 0)
+        finally:
+            img_destroy_gs(gs)
+
+        # PDF global settings
+        gs = pdf_create_gs()
+        try:
+            self.assertEqual(pdf_set_gs(gs, b'orientation', b'Landscape'), 1)
+            buf = ctypes.create_string_buffer(64)
+            # Valid call
+            self.assertEqual(pdf_get_gs(gs, b'orientation', buf, 64), 1)
+            self.assertEqual(buf.value, b'Landscape')
+            # Null value buffer pointer
+            self.assertEqual(pdf_get_gs(gs, b'orientation', None, 64), 0)
+            # Zero buffer size
+            self.assertEqual(pdf_get_gs(gs, b'orientation', buf, 0), 0)
+            # Negative buffer size
+            self.assertEqual(pdf_get_gs(gs, b'orientation', buf, -1), 0)
+        finally:
+            pdf_destroy_gs(gs)
+
+        # PDF object settings
+        os_obj = pdf_create_os()
+        try:
+            self.assertEqual(pdf_set_os(os_obj, b'page', b'http://example.com'), 1)
+            buf = ctypes.create_string_buffer(64)
+            # Valid call
+            self.assertEqual(pdf_get_os(os_obj, b'page', buf, 64), 1)
+            self.assertEqual(buf.value, b'http://example.com')
+            # Null value buffer pointer
+            self.assertEqual(pdf_get_os(os_obj, b'page', None, 64), 0)
+            # Zero buffer size
+            self.assertEqual(pdf_get_os(os_obj, b'page', buf, 0), 0)
+            # Negative buffer size
+            self.assertEqual(pdf_get_os(os_obj, b'page', buf, -1), 0)
+        finally:
+            pdf_destroy_os(os_obj)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
