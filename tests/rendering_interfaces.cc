@@ -1,5 +1,7 @@
 // Integration tests for the synchronous WebKit rendering contracts.
 #include "webkitpage.hh"
+#include "pdf.h"
+#include "image.h"
 #include <QApplication>
 #include <QFile>
 #include <QImage>
@@ -116,6 +118,51 @@ private slots:
 		}
 		QCOMPARE(count, 3);
 		output.close();
+	}
+
+	void cBindingsSettingGettersSafety() {
+		wkhtmltopdf_global_settings * pdfGs = wkhtmltopdf_create_global_settings();
+		wkhtmltopdf_set_global_setting(pdfGs, "size.pageSize", "A4");
+
+		char buf[64];
+		memset(buf, 0, sizeof(buf));
+
+		// Valid calls
+		QCOMPARE(wkhtmltopdf_get_global_setting(pdfGs, "size.pageSize", buf, sizeof(buf)), 1);
+		QCOMPARE(QString::fromUtf8(buf), QString("A4"));
+
+		// Invalid value pointer (NULL) or non-positive size
+		QCOMPARE(wkhtmltopdf_get_global_setting(pdfGs, "size.pageSize", NULL, 64), 0);
+		QCOMPARE(wkhtmltopdf_get_global_setting(pdfGs, "size.pageSize", buf, 0), 0);
+		QCOMPARE(wkhtmltopdf_get_global_setting(pdfGs, "size.pageSize", buf, -5), 0);
+
+		wkhtmltopdf_destroy_global_settings(pdfGs);
+
+		wkhtmltopdf_object_settings * pdfOs = wkhtmltopdf_create_object_settings();
+		wkhtmltopdf_set_object_setting(pdfOs, "page", "http://example.com");
+
+		memset(buf, 0, sizeof(buf));
+		QCOMPARE(wkhtmltopdf_get_object_setting(pdfOs, "page", buf, sizeof(buf)), 1);
+		QCOMPARE(QString::fromUtf8(buf), QString("http://example.com"));
+
+		QCOMPARE(wkhtmltopdf_get_object_setting(pdfOs, "page", NULL, 64), 0);
+		QCOMPARE(wkhtmltopdf_get_object_setting(pdfOs, "page", buf, 0), 0);
+		QCOMPARE(wkhtmltopdf_get_object_setting(pdfOs, "page", buf, -1), 0);
+
+		wkhtmltopdf_destroy_object_settings(pdfOs);
+
+		wkhtmltoimage_global_settings * imgGs = wkhtmltoimage_create_global_settings();
+		wkhtmltoimage_set_global_setting(imgGs, "fmt", "png");
+
+		memset(buf, 0, sizeof(buf));
+		QCOMPARE(wkhtmltoimage_get_global_setting(imgGs, "fmt", buf, sizeof(buf)), 1);
+		QCOMPARE(QString::fromUtf8(buf), QString("png"));
+
+		QCOMPARE(wkhtmltoimage_get_global_setting(imgGs, "fmt", NULL, 64), 0);
+		QCOMPARE(wkhtmltoimage_get_global_setting(imgGs, "fmt", buf, 0), 0);
+		QCOMPARE(wkhtmltoimage_get_global_setting(imgGs, "fmt", buf, -10), 0);
+
+		wkhtmltoimage_destroy_global_settings(imgGs);
 	}
 };
 

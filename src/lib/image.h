@@ -44,6 +44,7 @@ CAPI(int) wkhtmltoimage_extended_qt();
 CAPI(const char *)wkhtmltoimage_version();
 
 CAPI(wkhtmltoimage_global_settings *) wkhtmltoimage_create_global_settings();
+CAPI(void) wkhtmltoimage_destroy_global_settings(wkhtmltoimage_global_settings *);
 
 CAPI(int) wkhtmltoimage_set_global_setting(wkhtmltoimage_global_settings * settings, const char * name, const char * value);
 CAPI(int) wkhtmltoimage_get_global_setting(wkhtmltoimage_global_settings * settings, const char * name, char * value, int vs);

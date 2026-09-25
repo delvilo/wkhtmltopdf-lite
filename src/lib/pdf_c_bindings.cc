@@ -325,6 +325,7 @@ CAPI(int) wkhtmltopdf_set_global_setting(wkhtmltopdf_global_settings * settings,
  * \returns 1 If the the setting exists and was read successfully and 0 otherwise
  */
 CAPI(int) wkhtmltopdf_get_global_setting(wkhtmltopdf_global_settings * settings, const char * name, char * value, int vs) {
+	if (!value || vs <= 0) return 0;
 	QString res = reinterpret_cast<settings::PdfGlobal *>(settings)->get(name);
 	if (res.isNull()) return 0;
 	if (!value || vs <= 0) return 0;
@@ -383,6 +384,7 @@ CAPI(int) wkhtmltopdf_set_object_setting(wkhtmltopdf_object_settings * settings,
  * \returns 1 If the the setting exists and was read successfully and 0 otherwise
  */
 CAPI(int) wkhtmltopdf_get_object_setting(wkhtmltopdf_object_settings * settings, const char * name, char * value, int vs) {
+	if (!value || vs <= 0) return 0;
 	QString res = reinterpret_cast<settings::PdfObject *>(settings)->get(name);
 	if (res.isNull()) return 0;
 	if (!value || vs <= 0) return 0;
