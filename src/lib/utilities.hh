@@ -47,6 +47,8 @@ public:
 	static QSvgRenderer * radiobutton_checked;
 };
 
+static const int NETWORK_ERROR_OFFSET = 1000;
+
 DLL_PUBLIC int handleError(bool success, int errorCode);
 
 #include <dllend.inc>

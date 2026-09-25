@@ -19,6 +19,7 @@
 // along with wkhtmltopdf.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "multipageloader_p.hh"
+#include "utilities.hh"
 #include <QFile>
 #include <QFileInfo>
 #include <QNetworkCookie>
@@ -418,35 +419,44 @@ void ResourceObject::amfinished(QNetworkReply * reply) {
 
 	int networkStatus = reply->error();
 	int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-	if ((networkStatus != 0 && networkStatus != 5) || (httpStatus > 399 && httpErrorCode == 0))
+
+	bool hasNetworkError = (networkStatus != QNetworkReply::NoError && networkStatus != QNetworkReply::OperationCanceledError);
+	bool hasHttpError = (httpStatus > 399);
+
+	if (hasNetworkError || hasHttpError)
 	{
-		QFileInfo fi(reply->url().toString());
-		QString extension = fi.completeSuffix().toLower().remove(QRegExp("\\?.*$"));
-		bool mediaFile = settings::LoadPage::mediaFilesExtensions.contains(extension);
-		if ( ! mediaFile) {
-			// XXX: Notify network errors as higher priority than HTTP errors.
-			//      QT's QNetworkReply::NetworkError enum uses values overlapping
-			//      HTTP status codes, so adding 1000 to QT's codes will avoid
-			//      confusion. Also a network error at this point will probably mean
-			//      no HTTP access at all, so we want network errors to be reported
-			//      with a higher priority than HTTP ones.
-			//      See: http://doc-snapshot.qt-project.org/4.8/qnetworkreply.html#NetworkError-enum
-			error(QString("Failed to load %1, with network status code %2 and http status code %3 - %4")
-				.arg(reply->url().toString()).arg(networkStatus).arg(httpStatus).arg(reply->errorString()));
-			httpErrorCode = networkStatus > 0 ? (networkStatus + 1000) : httpStatus;
-			return;
-		}
-		if (settings.mediaLoadErrorHandling == settings::LoadPage::abort)
-		{
-			httpErrorCode = networkStatus > 0 ? (networkStatus + 1000) : httpStatus;
-			error(QString("Failed to load ") + reply->url().toString() + ", with code: " + QString::number(httpErrorCode) +
-				" (sometimes it will work just to ignore this error with --load-media-error-handling ignore)");
-		}
-		else {
-			warning(QString("Failed to load %1 (%2)")
-					.arg(reply->url().toString())
-					.arg(settings::loadErrorHandlingToStr(settings.mediaLoadErrorHandling))
-					);
+		// Network errors are prioritized over HTTP errors and offset by NETWORK_ERROR_OFFSET (1000)
+		// to prevent confusion with overlapping HTTP status codes. Network errors at this point
+		// usually indicate connectivity issues (e.g., host not found, connection refused).
+		// See: http://doc-snapshot.qt-project.org/4.8/qnetworkreply.html#NetworkError-enum
+		int newErrorCode = hasNetworkError ? (networkStatus + NETWORK_ERROR_OFFSET) : httpStatus;
+
+		// Update error code if no error was previously recorded (httpErrorCode == 0) or if
+		// a higher priority network error (>= NETWORK_ERROR_OFFSET) occurs when only an HTTP error (< NETWORK_ERROR_OFFSET) was recorded.
+		bool shouldUpdateErrorCode = (httpErrorCode == 0) || (newErrorCode >= NETWORK_ERROR_OFFSET && httpErrorCode < NETWORK_ERROR_OFFSET);
+
+		if (shouldUpdateErrorCode) {
+			QFileInfo fi(reply->url().toString());
+			QString extension = fi.completeSuffix().toLower().remove(QRegExp("\\?.*$"));
+			bool mediaFile = settings::LoadPage::mediaFilesExtensions.contains(extension);
+			if ( ! mediaFile) {
+				error(QString("Failed to load %1, with network status code %2 and http status code %3 - %4")
+					.arg(reply->url().toString()).arg(networkStatus).arg(httpStatus).arg(reply->errorString()));
+				httpErrorCode = newErrorCode;
+				return;
+			}
+			if (settings.mediaLoadErrorHandling == settings::LoadPage::abort)
+			{
+				httpErrorCode = newErrorCode;
+				error(QString("Failed to load ") + reply->url().toString() + ", with code: " + QString::number(httpErrorCode) +
+					" (sometimes it will work just to ignore this error with --load-media-error-handling ignore)");
+			}
+			else {
+				warning(QString("Failed to load %1 (%2)")
+						.arg(reply->url().toString())
+						.arg(settings::loadErrorHandlingToStr(settings.mediaLoadErrorHandling))
+						);
+			}
 		}
 	}
 }
@@ -680,8 +690,15 @@ LoaderObject * MultiPageLoader::addResource(const QUrl & url, const settings::Lo
  */
 int MultiPageLoader::httpErrorCode() {
 	int res=0;
-	foreach (const ResourceObject * ro, d->resources)
-		if (ro->httpErrorCode > res) res = ro->httpErrorCode;
+	foreach (const ResourceObject * ro, d->resources) {
+		if (ro->httpErrorCode >= NETWORK_ERROR_OFFSET) {
+			if (res < NETWORK_ERROR_OFFSET || ro->httpErrorCode > res) {
+				res = ro->httpErrorCode;
+			}
+		} else if (res < NETWORK_ERROR_OFFSET && ro->httpErrorCode > res) {
+			res = ro->httpErrorCode;
+		}
+	}
 	return res;
 }
 

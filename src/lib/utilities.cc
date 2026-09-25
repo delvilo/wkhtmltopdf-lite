@@ -137,10 +137,10 @@ int handleError(bool success, int errorCode) {
 		if (ce.contains(errorCode)) c = ce[errorCode];
 		const char * m = "";
 		if (cm.contains(errorCode)) m = cm[errorCode];
-		if (errorCode < 1000) {
+		if (errorCode < NETWORK_ERROR_OFFSET) {
 			fprintf(stderr, "Exit with code %d due to http error: %d %s\n", c, errorCode, m);
 		} else {
-			QNetworkReply::NetworkError error = (QNetworkReply::NetworkError)(errorCode - 1000);
+			QNetworkReply::NetworkError error = (QNetworkReply::NetworkError)(errorCode - NETWORK_ERROR_OFFSET);
 			QString errorValue;
 			QMetaObject meta = QNetworkReply::staticMetaObject;
 			for (int i=0; i < meta.enumeratorCount(); ++i) {
