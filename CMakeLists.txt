@@ -25,6 +25,10 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
 set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
 
+# Prefer static libraries when finding packages
+set(BUILD_SHARED_LIBS OFF)
+set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ${CMAKE_FIND_LIBRARY_SUFFIXES})
+
 find_package(Qt5 5.3 REQUIRED COMPONENTS Core Gui Widgets Network PrintSupport Svg WebKit WebKitWidgets)
 
 set(wkhtmltox_sources
@@ -50,13 +54,13 @@ set(wkhtmltox_qt
     Qt5::Svg Qt5::WebKit Qt5::WebKitWidgets
 )
 
-add_library(wkhtmltox SHARED ${wkhtmltox_sources} ${wkhtmltox_headers} wkhtmltopdf.qrc)
+add_library(wkhtmltox STATIC ${wkhtmltox_sources} ${wkhtmltox_headers} wkhtmltopdf.qrc)
 target_include_directories(wkhtmltox PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/lib>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/wkhtmltox>
 )
 target_compile_definitions(wkhtmltox PRIVATE
-    BUILDING_WKHTMLTOX BUILDING_DLL
+    BUILDING_WKHTMLTOX
     VERSION=${WKHTMLTOX_BASE_VERSION} FULL_VERSION=${WKHTMLTOX_VERSION}
 )
 target_link_libraries(wkhtmltox PUBLIC ${wkhtmltox_qt})
