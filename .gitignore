@@ -8,7 +8,8 @@ wkhtmltopdf.app/
 wkhtmltopdf.xcodeproj/
 release*/
 test/
-static-build/
+static-build
+__pycache__/
 .obj/
 doc/
 docs/_site/

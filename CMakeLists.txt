@@ -22,12 +22,13 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
-set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
-
-# Prefer static libraries when finding packages
-set(BUILD_SHARED_LIBS OFF)
-set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ${CMAKE_FIND_LIBRARY_SUFFIXES})
+option(WKHTMLTOX_PORTABLE "Require static Qt5/WebKit and check Linux runtime dependencies" OFF)
+if(WKHTMLTOX_PORTABLE)
+    set(CMAKE_SKIP_RPATH ON)
+else()
+    set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
+    set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
+endif()
 
 find_package(Qt5 5.3 REQUIRED COMPONENTS Core Gui Widgets Network PrintSupport Svg WebKit WebKitWidgets)
 
@@ -53,6 +54,10 @@ set(wkhtmltox_qt
     Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Network Qt5::PrintSupport
     Qt5::Svg Qt5::WebKit Qt5::WebKitWidgets
 )
+if(WKHTMLTOX_PORTABLE)
+    include(cmake/PortableQt.cmake)
+    wkhtmltox_check_static_qt(${wkhtmltox_qt})
+endif()
 
 add_library(wkhtmltox STATIC ${wkhtmltox_sources} ${wkhtmltox_headers} wkhtmltopdf.qrc)
 target_include_directories(wkhtmltox PUBLIC
@@ -64,7 +69,12 @@ target_compile_definitions(wkhtmltox PRIVATE
     VERSION=${WKHTMLTOX_BASE_VERSION} FULL_VERSION=${WKHTMLTOX_VERSION}
 )
 target_link_libraries(wkhtmltox PUBLIC ${wkhtmltox_qt})
-set_target_properties(wkhtmltox PROPERTIES VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}")
+if(WKHTMLTOX_PORTABLE)
+    include("${QT5_STATIC_PREFIX}/lib/cmake/wkhtmltox/PortableDependencies.cmake")
+    target_link_libraries(wkhtmltox PUBLIC wkhtmltox_portable_dependencies)
+    wkhtmltox_no_default_plugins(wkhtmltox)
+endif()
+set_target_properties(wkhtmltox PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 set(wkhtmltox_cli_sources
     src/shared/outputter.cc src/shared/manoutputter.cc src/shared/textoutputter.cc
@@ -89,7 +99,18 @@ foreach(app IN ITEMS wkhtmltopdf wkhtmltoimage)
     target_compile_definitions(${app} PRIVATE BUILDING_WKHTMLTOX
         VERSION=${WKHTMLTOX_BASE_VERSION} FULL_VERSION=${WKHTMLTOX_VERSION})
     target_link_libraries(${app} PRIVATE wkhtmltox)
+    if(WKHTMLTOX_PORTABLE)
+        wkhtmltox_import_plugins(${app})
+    endif()
 endforeach()
+
+if(WKHTMLTOX_PORTABLE)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    add_custom_target(check_portable ALL
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tools/portable/check-runtime.py"
+            "$<TARGET_FILE:wkhtmltopdf>" "$<TARGET_FILE:wkhtmltoimage>"
+        DEPENDS wkhtmltopdf wkhtmltoimage VERBATIM)
+endif()
 
 install(TARGETS wkhtmltox wkhtmltopdf wkhtmltoimage
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
@@ -97,6 +118,8 @@ install(TARGETS wkhtmltox wkhtmltopdf wkhtmltoimage
     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 install(FILES src/lib/pdf.h src/lib/image.h src/lib/dllbegin.inc src/lib/dllend.inc
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/wkhtmltox")
+install(FILES LICENSE COPYING.GPLv3 THIRD_PARTY_NOTICES.md
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/doc/wkhtmltox")
 
 find_program(GZIP_EXECUTABLE gzip REQUIRED)
 foreach(app IN ITEMS wkhtmltopdf wkhtmltoimage)
@@ -115,6 +138,15 @@ install(FILES ${wkhtmltox_manpages} DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
 if(BUILD_TESTING)
     find_package(Python3 REQUIRED COMPONENTS Interpreter)
     find_package(Qt5 5.3 REQUIRED COMPONENTS Test)
+    # ctypes exercises the C API via a test-only DSO. The shipped tools and
+    # installed library still link/use libwkhtmltox.a.
+    add_library(wkhtmltox_c_api_tests SHARED tests/c_api_library.cc)
+    set_target_properties(wkhtmltox_c_api_tests PROPERTIES OUTPUT_NAME wkhtmltox)
+    target_link_libraries(wkhtmltox_c_api_tests PRIVATE
+        "-Wl,--whole-archive" wkhtmltox "-Wl,--no-whole-archive")
+    if(WKHTMLTOX_PORTABLE)
+        wkhtmltox_import_plugins(wkhtmltox_c_api_tests)
+    endif()
     foreach(suite IN ITEMS image_entry_smoke option_removal_smoke rendering_backend_smoke)
         add_test(NAME ${suite}
             COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/${suite}.py"
@@ -129,6 +161,10 @@ if(BUILD_TESTING)
     target_include_directories(rendering_interfaces PRIVATE src/lib)
     target_compile_definitions(rendering_interfaces PRIVATE BUILDING_WKHTMLTOX)
     target_link_libraries(rendering_interfaces PRIVATE wkhtmltox ${wkhtmltox_qt} Qt5::Test)
+    if(WKHTMLTOX_PORTABLE)
+        wkhtmltox_check_static_qt(Qt5::Test)
+        wkhtmltox_import_plugins(rendering_interfaces)
+    endif()
     add_test(NAME rendering_interfaces COMMAND rendering_interfaces)
     set_tests_properties(rendering_interfaces PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endif()

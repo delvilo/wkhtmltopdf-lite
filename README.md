@@ -38,8 +38,11 @@ build/bin/wkhtmltopdf input.html output.pdf
 build/bin/wkhtmltoimage --format png --transparent input.html output.png
 ```
 
-The CMake build creates `libwkhtmltox.so` alongside the executables in
-`build/bin`. To install the library, C headers, tools and manpages, run
+The CMake build creates `libwkhtmltox.a` alongside the executables in
+`build/bin`. This ordinary build uses the distribution's shared Qt libraries.
+With tests enabled, an additional `libwkhtmltox.so` is created only for the
+Python C API checks; it is not installed. To install the static library,
+C headers, tools and manpages, run
 `cmake --install build --prefix /your/install/prefix`. Use
 `-DWKHTMLTOX_VERSION=...` to override the default version shown by the tools.
 
@@ -47,6 +50,18 @@ Use the source build above for this fork. Upstream prebuilt packages use a
 different feature set. The upstream website snapshots under `docs/` are retained
 as historical references; this README, the migration guide and freshly generated
 `--extended-help` describe the current fork.
+
+## Portable Linux executables
+
+For Ubuntu 24.04 x86_64 builds that run on Debian 13 without Qt5/WebKit packages,
+use the [static toolchain and packaging guide](docs/portable-linux.md).
+Qt5/WebKit and selected dependencies are linked into each executable; the
+documented base system libraries, fonts and CA certificates remain external.
+The portable CI tests the binaries in `debian:13-slim` with no Qt installed.
+
+The project uses **LGPL-3.0-or-later**. Portable releases pair binary and complete
+corresponding source archives, with third-party notices and rebuilding/relinking
+instructions. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Architecture and checks
 
