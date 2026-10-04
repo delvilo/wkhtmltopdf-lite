@@ -39,6 +39,9 @@ void CommandLineParserBase::outputName(Outputter * o) const {
 void CommandLineParserBase::outputLicense(Outputter * o) const {
 	o->beginSection("License");
 	o->paragraph("Copyright (c) 2010-2020 wkhtmltopdf authors");
+	o->paragraph("Uses Qt5 and QtWebKit under their open source licenses. "
+		"See THIRD_PARTY_NOTICES.md and the matching source archive for component "
+		"notices and instructions to rebuild or relink modified libraries.");
 	QFile file(":/LICENSE");
 	file.open(QIODevice::ReadOnly | QIODevice::Text);
 	QTextStream stream(&file);

@@ -1,0 +1,13 @@
+# Native Linux build with an explicit static Qt installation. LGPL-3.0-or-later.
+set(QT5_STATIC_PREFIX "$ENV{QT5_STATIC_PREFIX}" CACHE PATH "Static Qt5 and QtWebKit installation")
+if(NOT IS_DIRECTORY "${QT5_STATIC_PREFIX}/lib/cmake/Qt5")
+    message(FATAL_ERROR "Set QT5_STATIC_PREFIX to the installation produced by tools/portable/build-toolchain.sh")
+endif()
+get_filename_component(QT5_STATIC_PREFIX "${QT5_STATIC_PREFIX}" REALPATH)
+list(APPEND CMAKE_TRY_COMPILE_PLATFORM_VARIABLES QT5_STATIC_PREFIX)
+list(PREPEND CMAKE_PREFIX_PATH "${QT5_STATIC_PREFIX}")
+set(WKHTMLTOX_PORTABLE ON CACHE BOOL "Check portable runtime" FORCE)
+set(CMAKE_SKIP_RPATH ON CACHE BOOL "No build-host paths in shipped tools" FORCE)
+foreach(module IN ITEMS Qt5 Qt5Core Qt5Gui Qt5Widgets Qt5Network Qt5PrintSupport Qt5Svg Qt5WebKit Qt5WebKitWidgets Qt5Test)
+    set(${module}_DIR "${QT5_STATIC_PREFIX}/lib/cmake/${module}" CACHE PATH "Pinned static Qt package" FORCE)
+endforeach()

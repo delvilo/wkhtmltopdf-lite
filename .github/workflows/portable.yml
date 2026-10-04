@@ -1,0 +1,79 @@
+name: Portable Qt5 Linux
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portable-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  portable:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build dependencies
+        run: sudo bash tools/portable/install-deps.sh
+      - name: Identify builder packages
+        id: packages
+        run: |
+          dpkg-query -W > "$RUNNER_TEMP/wkhtmltox-builder-packages.txt"
+          echo "digest=$(sha256sum "$RUNNER_TEMP/wkhtmltox-builder-packages.txt" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/restore@v4
+        id: sdk
+        with:
+          path: ${{ runner.temp }}/wkhtmltox-static
+          key: qt5-static-v1-${{ runner.os }}-${{ steps.packages.outputs.digest }}-${{ hashFiles('tools/portable/build-toolchain.sh', 'tools/portable/sources.py') }}
+      - name: Build static Qt5 and QtWebKit
+        if: steps.sdk.outputs.cache-hit != 'true'
+        run: JOBS=2 bash tools/portable/build-toolchain.sh "$RUNNER_TEMP/wkhtmltox-static"
+      # Save before application tests so a linker/test fix can reuse the SDK.
+      # Qt5's static metadata references its build tree, so retain the whole SDK.
+      - uses: actions/cache/save@v4
+        if: steps.sdk.outputs.cache-hit != 'true'
+        with:
+          path: ${{ runner.temp }}/wkhtmltox-static
+          key: ${{ steps.sdk.outputs.cache-primary-key }}
+      - name: Build portable tools
+        run: |
+          cmake -S . -B build/portable -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/qt5-static.cmake \
+            -DQT5_STATIC_PREFIX="$RUNNER_TEMP/wkhtmltox-static/qt"
+          cmake --build build/portable --parallel 2
+      - name: Ubuntu regressions and relocated executables
+        run: |
+          ctest --test-dir build/portable --output-on-failure
+          python3 tests/portable_smoke.py --bin-dir build/portable/bin
+      - name: Debian 13 without Qt
+        run: |
+          mkdir -p build/runtime
+          cp build/portable/bin/wkhtmltopdf build/portable/bin/wkhtmltoimage build/runtime/
+          docker run --rm -v "$PWD/build/runtime:/opt/bin:ro" \
+            -v "$PWD/tests:/checks:ro" -v "$PWD/tools/portable:/audit:ro" \
+            debian:13-slim sh -ec '
+              apt-get update
+              apt-get install -y --no-install-recommends ca-certificates libstdc++6 \
+                libfontconfig1 libfreetype6 libssl3t64 libpcre2-16-0 libzstd1 liblzma5 \
+                fonts-dejavu-core fonts-noto-cjk python3 openssl poppler-utils binutils
+              if dpkg-query -W | grep -Ei "^(libqt5|qt5|.*webkit)"; then
+                echo "Qt/WebKit unexpectedly installed" >&2; exit 1
+              fi
+              python3 /audit/check-runtime.py /opt/bin/wkhtmltopdf /opt/bin/wkhtmltoimage
+              python3 /checks/portable_smoke.py --bin-dir /opt/bin
+              python3 /checks/rendering_backend_smoke.py --bin-dir /opt/bin
+            '
+      - name: Package executables and corresponding sources
+        run: python3 tools/portable/package.py --work "$RUNNER_TEMP/wkhtmltox-static"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: portable-linux-x86_64-with-sources
+          path: build/packages/*
+          compression-level: 0
+          if-no-files-found: error
