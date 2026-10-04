@@ -33,7 +33,7 @@ jobs:
           key: qt5-static-v1-${{ runner.os }}-${{ steps.packages.outputs.digest }}-${{ hashFiles('tools/portable/build-toolchain.sh', 'tools/portable/sources.py') }}
       - name: Build static Qt5 and QtWebKit
         if: steps.sdk.outputs.cache-hit != 'true'
-        run: JOBS=2 bash tools/portable/build-toolchain.sh "$RUNNER_TEMP/wkhtmltox-static"
+        run: JOBS=4 bash tools/portable/build-toolchain.sh "$RUNNER_TEMP/wkhtmltox-static"
       # Save before application tests so a linker/test fix can reuse the SDK.
       # Qt5's static metadata references its build tree, so retain the whole SDK.
       - uses: actions/cache/save@v4

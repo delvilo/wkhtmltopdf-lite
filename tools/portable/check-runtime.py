@@ -6,6 +6,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 """
 import argparse
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -22,7 +23,8 @@ libzstd.so.1 liblzma.so.5
 
 
 def run(*args):
-    return subprocess.check_output(args, text=True, stderr=subprocess.STDOUT)
+    return subprocess.check_output(args, text=True, stderr=subprocess.STDOUT,
+                                   env={**os.environ, 'LC_ALL': 'C'})
 
 
 def inspect(binary):
