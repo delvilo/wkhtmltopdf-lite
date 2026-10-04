@@ -154,13 +154,12 @@ if(BUILD_TESTING)
         set_tests_properties(${suite} PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
     endforeach()
 
-    add_executable(rendering_interfaces
-        tests/rendering_interfaces.cc src/lib/webkitpage.cc src/lib/resourceloader.cc
-        src/lib/rendering.hh src/lib/resourceloader.hh src/lib/webkitpage.hh
-        wkhtmltopdf.qrc)
+    # These implementations and their MOC objects already live in the static
+    # wkhtmltox archive; compiling them again creates duplicate definitions.
+    add_executable(rendering_interfaces tests/rendering_interfaces.cc wkhtmltopdf.qrc)
     target_include_directories(rendering_interfaces PRIVATE src/lib)
     target_compile_definitions(rendering_interfaces PRIVATE BUILDING_WKHTMLTOX)
-    target_link_libraries(rendering_interfaces PRIVATE wkhtmltox ${wkhtmltox_qt} Qt5::Test)
+    target_link_libraries(rendering_interfaces PRIVATE wkhtmltox Qt5::Test)
     if(WKHTMLTOX_PORTABLE)
         wkhtmltox_check_static_qt(Qt5::Test)
         wkhtmltox_import_plugins(rendering_interfaces)
