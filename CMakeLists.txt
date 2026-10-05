@@ -149,6 +149,10 @@ if(BUILD_TESTING)
     target_link_libraries(wkhtmltox_c_api_tests PRIVATE
         "-Wl,--whole-archive" wkhtmltox "-Wl,--no-whole-archive")
     if(WKHTMLTOX_PORTABLE)
+        # Ubuntu's static ICU archives use direct references to their globals.
+        # Bind definitions locally in this ctypes-only DSO, matching the
+        # standalone executables and avoiding preemptible PC32 relocations.
+        target_link_options(wkhtmltox_c_api_tests PRIVATE "LINKER:-Bsymbolic")
         wkhtmltox_import_plugins(wkhtmltox_c_api_tests)
     endif()
     foreach(suite IN ITEMS image_entry_smoke option_removal_smoke rendering_backend_smoke)
