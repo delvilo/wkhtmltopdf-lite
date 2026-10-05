@@ -1,4 +1,19 @@
 # LGPL-3.0-or-later
+function(wkhtmltox_group_static_dependencies target)
+    # The SDK exports GNU linker markers, but CMake does not understand their
+    # boundaries. WebKit's transitive ICU entries can therefore be deduplicated
+    # outside the group. A native CMake group preserves every archive, including
+    # occurrences inherited from QtWebKit's imported targets.
+    get_target_property(dependencies ${target} INTERFACE_LINK_LIBRARIES)
+    list(REMOVE_ITEM dependencies "-Wl,--start-group" "-Wl,--end-group")
+    set(archives ${dependencies})
+    list(FILTER archives INCLUDE REGEX "\\.a$")
+    list(FILTER dependencies EXCLUDE REGEX "\\.a$")
+    list(JOIN archives "," archives)
+    set_property(TARGET ${target} PROPERTY INTERFACE_LINK_LIBRARIES
+        "$<LINK_GROUP:RESCAN,${archives}>;${dependencies}")
+endfunction()
+
 function(wkhtmltox_check_static_qt)
     if(NOT QT5_STATIC_PREFIX)
         message(FATAL_ERROR "Portable builds require QT5_STATIC_PREFIX and cmake/toolchains/qt5-static.cmake")

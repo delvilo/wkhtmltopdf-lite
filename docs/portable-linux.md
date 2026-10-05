@@ -7,6 +7,8 @@ Build natively on **Ubuntu 24.04 x86_64**. Deploy `wkhtmltopdf` and
 server, a plugin directory, or an `LD_LIBRARY_PATH` wrapper. Each executable
 contains Qt5, QtWebKit and its offscreen/image plugins. This is static Qt
 linkage with shared system libraries, not a fully static libc executable.
+The portable application build requires **CMake 3.24 or newer** to preserve
+static archive link groups; Ubuntu 24.04's packaged CMake meets this requirement.
 
 The release check rejects dynamic Qt, WebKit, ICU, JPEG and libxml2 dependencies,
 unapproved SONAMEs, RPATH/RUNPATH, GLIBC newer than 2.39, and GLIBCXX newer than
