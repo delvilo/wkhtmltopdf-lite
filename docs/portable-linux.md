@@ -34,6 +34,8 @@ between systems with different fonts. CA certificates and OpenSSL come from
 the target distribution so they can be updated independently of this program.
 The existing loader's handling of certificate errors is unchanged; the HTTPS
 regression verifies TLS loading, not strict certificate rejection.
+With some CJK fonts, Qt5's PDF text extraction uses Unicode compatibility
+characters for shared glyphs; normalize extracted text with NFKC when comparing it.
 
 ## Build the static toolchain
 

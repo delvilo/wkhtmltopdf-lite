@@ -15,6 +15,7 @@ import subprocess
 import tempfile
 import threading
 import unittest
+import unicodedata
 import zlib
 import struct
 
@@ -55,7 +56,10 @@ class PortableSmoke(unittest.TestCase):
         self.run_tool('wkhtmltopdf', self.page, target)
         extracted = subprocess.check_output(['pdftotext', str(target), '-'], text=True)
         self.assertIn('Portable PDF', extracted)
-        self.assertIn('中文測試', extracted)
+        # Noto maps some CJK characters and Kangxi radicals to the same glyph.
+        # Qt5's PDF ToUnicode map may use the compatibility code point, so
+        # compare normalized text while still requiring every Chinese glyph.
+        self.assertIn('中文測試', unicodedata.normalize('NFKC', extracted))
         fonts = subprocess.check_output(['pdffonts', str(target)], text=True)
         self.assertIn('Noto', fonts)
         source = self.work / 'pages.html'
