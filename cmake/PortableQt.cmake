@@ -3,15 +3,14 @@ function(wkhtmltox_group_static_dependencies target)
     # The SDK exports GNU linker markers, but CMake does not understand their
     # boundaries. WebKit's transitive ICU entries can therefore be deduplicated
     # outside the group. A native CMake group preserves every archive, including
-    # occurrences inherited from QtWebKit's imported targets.
+    # occurrences inherited from QtWebKit's imported targets. Keep system
+    # dependencies in the group too: --as-needed must see them after the
+    # archives that reference them (notably libxml2 -> lzma).
     get_target_property(dependencies ${target} INTERFACE_LINK_LIBRARIES)
     list(REMOVE_ITEM dependencies "-Wl,--start-group" "-Wl,--end-group")
-    set(archives ${dependencies})
-    list(FILTER archives INCLUDE REGEX "\\.a$")
-    list(FILTER dependencies EXCLUDE REGEX "\\.a$")
-    list(JOIN archives "," archives)
+    list(JOIN dependencies "," dependencies)
     set_property(TARGET ${target} PROPERTY INTERFACE_LINK_LIBRARIES
-        "$<LINK_GROUP:RESCAN,${archives}>;${dependencies}")
+        "$<LINK_GROUP:RESCAN,${dependencies}>")
 endfunction()
 
 function(wkhtmltox_check_static_qt)
