@@ -40,8 +40,8 @@ build/bin/wkhtmltoimage --format png --transparent input.html output.png
 
 The CMake build creates `libwkhtmltox.a` alongside the executables in
 `build/bin`. This ordinary build uses the distribution's shared Qt libraries.
-With tests enabled, an additional `libwkhtmltox.so` is created only for the
-Python C API checks; it is not installed. To install the static library,
+With tests enabled, a native test executable checks the C API by linking
+directly to `libwkhtmltox.a`; it is not installed. To install the static library,
 C headers, tools and manpages, run
 `cmake --install build --prefix /your/install/prefix`. Use
 `-DWKHTMLTOX_VERSION=...` to override the default version shown by the tools.

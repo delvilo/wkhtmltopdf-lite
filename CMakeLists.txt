@@ -142,19 +142,20 @@ install(FILES ${wkhtmltox_manpages} DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
 if(BUILD_TESTING)
     find_package(Python3 REQUIRED COMPONENTS Interpreter)
     find_package(Qt5 5.3 REQUIRED COMPONENTS Test)
-    # ctypes exercises the C API via a test-only DSO. The shipped tools and
-    # installed library still link/use libwkhtmltox.a.
-    add_library(wkhtmltox_c_api_tests SHARED tests/c_api_library.cc)
-    set_target_properties(wkhtmltox_c_api_tests PROPERTIES OUTPUT_NAME wkhtmltox)
-    target_link_libraries(wkhtmltox_c_api_tests PRIVATE
-        "-Wl,--whole-archive" wkhtmltox "-Wl,--no-whole-archive")
+    # Exercise the installed static C API directly. Distribution-provided
+    # archives such as ICU are not PIC and cannot be loaded through ctypes.
+    add_executable(c_api_smoke tests/c_api_smoke.cc wkhtmltopdf.qrc)
+    target_compile_definitions(c_api_smoke PRIVATE BUILDING_WKHTMLTOX)
+    target_compile_features(c_api_smoke PRIVATE cxx_std_11)
+    target_link_libraries(c_api_smoke PRIVATE wkhtmltox)
     if(WKHTMLTOX_PORTABLE)
-        # Ubuntu's static ICU archives use direct references to their globals.
-        # Bind definitions locally in this ctypes-only DSO, matching the
-        # standalone executables and avoiding preemptible PC32 relocations.
-        target_link_options(wkhtmltox_c_api_tests PRIVATE "LINKER:-Bsymbolic")
-        wkhtmltox_import_plugins(wkhtmltox_c_api_tests)
+        wkhtmltox_import_plugins(c_api_smoke)
     endif()
+    foreach(suite IN ITEMS image settings pdf)
+        add_test(NAME c_api_${suite} COMMAND c_api_smoke ${suite})
+        set_tests_properties(c_api_${suite} PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 45)
+    endforeach()
     foreach(suite IN ITEMS image_entry_smoke option_removal_smoke rendering_backend_smoke)
         add_test(NAME ${suite}
             COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/${suite}.py"

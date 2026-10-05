@@ -2,7 +2,6 @@
 """Exercise the reduced CLI and C API using freshly built binaries."""
 
 import argparse
-import ctypes
 import os
 from pathlib import Path
 import re
@@ -127,94 +126,6 @@ class OptionRemovalSmoke(unittest.TestCase):
         self.assert_success(result)
         self.assertEqual(result.stdout[:8], b'\x89PNG\r\n\x1a\n')
         self.assertEqual(struct.unpack('>II', result.stdout[16:24]), (160, 90))
-
-    def test_c_api_settings_and_conversion(self):
-        path = BIN_DIR / 'libwkhtmltox.so'
-        self.assertTrue(path.exists(), 'Build the shared library before running the smoke checks')
-        lib = ctypes.CDLL(str(path))
-        ptr = ctypes.c_void_p
-        text = ctypes.c_char_p
-
-        def bind(name, args, result):
-            fn = getattr(lib, name)
-            fn.argtypes, fn.restype = args, result
-            return fn
-
-        initialize = bind('wkhtmltopdf_init', [ctypes.c_int], ctypes.c_int)
-        deinitialize = bind('wkhtmltopdf_deinit', [], ctypes.c_int)
-        self.assertEqual(initialize(0), 1)
-        try:
-            for prefix, removed in [
-                ('wkhtmltopdf', ['quiet', 'useGraphics', 'resolution', 'copies', 'collate', 'dumpOutline', 'useCompression', 'resolveRelativeLinks', 'pageOffset', 'outline', 'outlineDepth', 'viewportSize', 'imageDPI', 'imageQuality']),
-                ('wkhtmltoimage', ['quiet', 'useGraphics', 'loadPage.checkboxSvg', 'loadPage.checkboxCheckedSvg', 'loadPage.radiobuttonSvg', 'loadPage.radiobuttonCheckedSvg', 'loadPage.printMediaType', 'web.enableIntelligentShrinking']),
-            ]:
-                create = bind(prefix + '_create_global_settings', [], ptr)
-                setting = bind(prefix + '_set_global_setting', [ptr, text, text], ctypes.c_int)
-                get = bind(prefix + '_get_global_setting', [ptr, text, ptr, ctypes.c_int], ctypes.c_int)
-                destroy = bind(prefix + '_destroy_global_settings', [ptr], None)
-                gs = create()
-                try:
-                    for key in removed:
-                        with self.subTest(api=prefix, removed=key):
-                            value = ctypes.create_string_buffer(100)
-                            self.assertEqual(get(gs, key.encode(), value, len(value)), 0)
-                            self.assertEqual(setting(gs, key.encode(), b'true'), 0)
-                    self.assertEqual(setting(gs, b'logLevel', b'none'), 1)
-                    value = ctypes.create_string_buffer(100)
-                    self.assertEqual(get(gs, b'logLevel', value, len(value)), 1)
-                    self.assertEqual(value.value, b'none')
-                finally:
-                    destroy(gs)
-
-            create_object = bind('wkhtmltopdf_create_object_settings', [], ptr)
-            set_object = bind('wkhtmltopdf_set_object_setting', [ptr, text, text], ctypes.c_int)
-            destroy_object = bind('wkhtmltopdf_destroy_object_settings', [ptr], None)
-            obj = create_object()
-            try:
-                for key in ['produceForms', 'web.enablePlugins', 'load.checkboxSvg', 'load.checkboxCheckedSvg', 'load.radiobuttonSvg', 'load.radiobuttonCheckedSvg',
-                            'header.left', 'footer.right', 'toc.captionText', 'tocXsl',
-                            'isTableOfContent', 'includeInOutline', 'pagesCount',
-                            'useExternalLinks', 'useLocalLinks', 'replacements',
-                            'web.enableIntelligentShrinking', 'web.printMediaType', 'load.printMediaType']:
-                    self.assertEqual(set_object(obj, key.encode(), b'true'), 0, key)
-                self.assertEqual(set_object(obj, b'web.enableJavascript', b'false'), 1)
-                self.assertEqual(set_object(obj, b'load.loadErrorHandling', b'skip'), 1)
-            finally:
-                destroy_object(obj)
-
-            extended = bind('wkhtmltopdf_extended_qt', [], ctypes.c_int)
-            self.assertEqual(extended(), 0)
-            callback_type = ctypes.CFUNCTYPE(None, ptr, ctypes.c_int)
-            set_finished = bind('wkhtmltopdf_set_finished_callback', [ptr, callback_type], None)
-            convert = bind('wkhtmltopdf_convert', [ptr], ctypes.c_int)
-            get_output = bind('wkhtmltopdf_get_output', [ptr, ctypes.POINTER(ptr)], ctypes.c_long)
-            for count, out, success in [(0, '', False), (2, '', False), (1, '', True),
-                                        (1, str(self.work / 'missing' / 'output.pdf'), False)]:
-                with self.subTest(inputs=count, out=out):
-                    gs = lib.wkhtmltopdf_create_global_settings()
-                    self.assertEqual(lib.wkhtmltopdf_set_global_setting(gs, b'logLevel', b'none'), 1)
-                    self.assertEqual(lib.wkhtmltopdf_set_global_setting(gs, b'out', out.encode()), 1)
-                    converter = bind('wkhtmltopdf_create_converter', [ptr], ptr)(gs)
-                    for _ in range(count):
-                        obj = create_object()
-                        bind('wkhtmltopdf_add_object', [ptr, ptr, text], None)(converter, obj, HTML)
-                    finished = []
-                    callback = callback_type(lambda _, result: finished.append(result))
-                    set_finished(converter, callback)
-                    try:
-                        self.assertEqual(convert(converter), int(success))
-                        self.assertEqual(finished, [int(success)])
-                        output = ptr()
-                        length = get_output(converter, ctypes.byref(output))
-                        if success:
-                            self.assertGreater(length, 0)
-                            self.assert_pdf(ctypes.string_at(output, length), pages=1)
-                        else:
-                            self.assertEqual(length, 0)
-                    finally:
-                        bind('wkhtmltopdf_destroy_converter', [ptr], None)(converter)
-        finally:
-            deinitialize()
 
     def test_rejects_multiple_inputs_and_object_commands(self):
         target = self.work / 'rejected.pdf'

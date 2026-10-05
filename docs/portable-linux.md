@@ -99,7 +99,7 @@ Publish all three matching files from `build/packages/` together:
   built (including local changes), source versions and build scripts.
 - `wkhtmltox-linux-x86_64-<commit>.sha256`: checksums for both archives.
 
-The temporary C API test `.so`, Qt SDK and compiler objects are not in the
+The C API test executable, Qt SDK and compiler objects are not in the
 binary package. Complete application source is supplied for rebuilding and
 relinking with modified libraries. Never distribute only a binary with links
 to someone else's upstream source hosting in place of its matching source
